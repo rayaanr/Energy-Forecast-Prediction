@@ -1,5 +1,5 @@
 library(readxl)
-vehicles <- read_excel("/Users/rayaan/Edu/ML & DS/ML CourseWork/ML_Coursework/vehicles.xlsx")
+vehicles <- read_excel("/Users/rayaan/Edu/ML & DS/ML Coursework/PC Part/vehicles.xlsx")
 
 # <----------------------------- 1 - A ----------------------------->
 
