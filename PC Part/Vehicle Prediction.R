@@ -3,72 +3,30 @@ library(cluster)
 library(NbClust)
 library(factoextra)
 
-
+# Read the Excel file
 vehicles <- read_excel("/Users/rayaan/Edu/ML & DS/ML Coursework/PC Part/vehicles.xlsx")
 
 # <----------------------------- 1 - A ----------------------------->
 
-# Remove the "Class" & "Sample" columns & missing values
-vehicles$Class <- NULL
-vehicles$Samples <- NULL
+# Remove the first and last columns
+vehicles <- vehicles[, -c(1, ncol(vehicles))]
+
+# Remove rows with missing values
 vehicles <- na.omit(vehicles)
 
-# Calculate the z-scores for each data point
-z_scores <- scale(vehicles)
+# Scale the data
+vehicles <- scale(vehicles)
 
-# Identify the data points with z-scores greater than 3 or less than -3
-outliers <- which(z_scores > 3 | z_scores < -3, arr.ind = TRUE)
+# Create a boxplot of the data
+boxplot(vehicles, main = "Data with Outliers", ylab = "Data")
 
-# Remove the identified data points from the dataset
-vehicles <- vehicles[-outliers[,1],]
+# Identify the outliers and remove them
+outliers <- apply(vehicles, 1, function(x) any(x > 3 | x < -3))
+vehicles <- subset(vehicles, !outliers)
 
-# Create a boxplot of the dataset
-boxplot(vehicles)
+summary(outliers)
 
-
-
-
-# Import required libraries
-library(readxl)
-library(factoextra)
-
-# Read data
-vehicles <- read_excel("Dataset/vehicles.xlsx")
-
-# Create working data set
-vehicles.raw <- vehicles[2:20]
-
-# Detect outliers by boxplot method
-outliers <- boxplot(vehicles.raw[1:18], plot = TRUE)$out
-
-# Delete outliers
-vehicles.clear <- vehicles.raw[-outliers,]
-
-# Copy class names for evaluation
-classes.name <- vehicles.clear$Class
-
-# Scale data
-vehicles.scale <- scale(vehicles.clear)
-
-# Summary and structure of scaled data
-summary(vehicles.scale)
-str(vehicles.scale)
-
-
-
-
-NBclust <- NbClust(vehicles.scale, distance = "euclidean", min.nc = 2, max.nc = 6, method = "kmeans")
-
-
-fviz_nbclust(vehicles.scale, kmeans, method = "wss")
-
-
-fviz_nbclust(vehicles.scale, kmeans, method = "gap_stat")
-
-fviz_nbclust(vehicles.scale, kmeans, method = "silhouette")
-
-
-
+boxplot(vehicles, main = "Data without Outliers", ylab = "Data")
 
 
 
@@ -91,7 +49,7 @@ fviz_nbclust(vehicles, kmeans, method = "silhouette")
 # <----------------------------- 1 - C ----------------------------->
 
 # Set the number of clusters
-k <- 2
+k <- 3
 
 # Perform k-means clustering
 km <- kmeans(vehicles, centers = k)
@@ -124,110 +82,16 @@ cat("Ratio of BSS over TSS:", bss / tss)
 
 
 # <----------------------------- 1 - D ----------------------------->
-# Generate the silhouette plot
-sil <- silhouette(km$cluster, dist(vehicles))
 
-# Plot the silhouette plot
-plot(sil, main = "Silhouette Plot for K-means Clustering")
-
-
-
-# Calculate the silhouette width for each observation:
+# Generate and plot the silhouette plot
 sil_width <- silhouette(km$cluster, dist(vehicles))
+plot(sil_width, main = "Silhouette Plot for K-means Clustering")
+
+# Calculate and print the average silhouette width
+cat("Average Silhouette Width:", mean(sil_width[,k]))
 
 # Create a colored silhouette plot
 fviz_silhouette(sil_width, palette = c("#2E9FDF", "#00AFBB", "#E7B800"), ggtheme = theme_bw(),
                 main = "Silhouette Plot of Clustering Results")
 
-# Calculate the average silhouette width for the clustering solution:
-cat("Average Silhouerre Width:", mean(sil_width[,k]))
-
-
-
-
-# <----------------------------- 1 - E ----------------------------->
-# https://www.youtube.com/watch?v=0Jp4gsfOLMs
-
-# Perform PCA
-pca <- prcomp(vehicles, scale = TRUE, center = TRUE)
-
-# Extract eigenvalues and eigenvectors
-eigenvalues <- pca$sdev^2
-eigenvectors <- pca$rotation
-
-# Calculate and plot the proportion of variance explained by each PC
-prop_var <- eigenvalues / sum(eigenvalues)
-plot(prop_var, type = "b", xlab = "Principal Component", ylab = "Proportion of Variance Explained")
-
-# Calculate the cumulative proportion of variance explained
-cum_prop_var <- cumsum(prop_var)
-plot(cum_prop_var, type = "b", xlab = "Number of Principal Components", ylab = "Cumulative Proportion of Variance Explained")
-
-# Mark the plot at 92% cumulative proportion of variance explained
-abline(h = 0.92, col = "red", lty = "dashed")
-abline(v = which(cum_prop_var >= 0.92)[1], col = "red", lty = "dashed")
-
-# Print the number of components required to explain 92% variance
-n_components <- which(cum_prop_var >= 0.92)[1]
-cat("Number of components to explain 92% variance:", n_components, "\n")
-
-# Create a new dataset with the chosen principal components
-vehicles_pca <- as.data.frame(predict(pca, vehicles))[, 1:n_components]
-
-
-
-
-
-# <----------------------------- 1 - F ----------------------------->
-
-# NBclust
-NBclust <- NbClust(vehicles, distance = "euclidean", min.nc = 2, max.nc = 6, method = "kmeans")
-
-# Elbow method
-fviz_nbclust(vehicles, kmeans, method = "wss")
-
-# Gap statistics
-fviz_nbclust(vehicles, kmeans, method = "gap_stat")
-
-# Determine the optimal number of clusters using the silhouette method
-fviz_nbclust(vehicles, kmeans, method = "silhouette")
-
-
-
-# <----------------------------- 1 - G ----------------------------->
-
-# Choose the best k from the automated methods
-k_pca <- 2
-
-# Perform k-means clustering on the PCA-based dataset
-set.seed(123)
-km_pca <- kmeans(vehicles_pca, centers = k_pca)
-
-# Show the k-means output
-km_pca
-
-# Calculate the BSS and WSS indices
-bss_pca <- sum(km_pca$betweenss)
-wss_pca <- sum(km_pca$withinss)
-
-# Calculate the ratio of BSS over TSS
-tss_pca <- bss_pca + wss_pca
-cat("Ratio of BSS over TSS:", bss_pca / tss_pca)
-
-
-
-# <----------------------------- 1 - H ----------------------------->
-
-# Perform k-means clustering on the PCA dataset 
-set.seed(123)
-km_pca <- kmeans(vehicles_pca, centers = k_pca)
-
-# Calculate silhouette width for each observation
-sil_width_pca <- silhouette(km_pca$cluster, dist(vehicles_pca))
-
-# Plot the silhouette plot
-plot(sil_width_pca, border = NA)
-
-# Calculate the average silhouette width for the clustering solution
-mean(sil_width_pca[, k_pca])
 
