@@ -1,67 +1,113 @@
 library(readxl)
+library(cluster)
+library(NbClust)
+library(factoextra)
+
+
 vehicles <- read_excel("/Users/rayaan/Edu/ML & DS/ML Coursework/PC Part/vehicles.xlsx")
 
 # <----------------------------- 1 - A ----------------------------->
 
-# Remove the "Class" column
+# Remove the "Class" & "Sample" columns & missing values
 vehicles$Class <- NULL
 vehicles$Samples <- NULL
+vehicles <- na.omit(vehicles)
 
-# To check total null values and omit them
-sum(is.na(vehicles)) # Check for missing values
-vehicles <- na.omit(vehicles) # Remove missing values
+# Calculate the z-scores for each data point
+z_scores <- scale(vehicles)
 
-# Calculate z-scores for each variable
-z_scores <- apply(vehicles, 2, function(x) (x - mean(x)) / sd(x))
+# Identify the data points with z-scores greater than 3 or less than -3
+outliers <- which(z_scores > 3 | z_scores < -3, arr.ind = TRUE)
 
-# Identify outliers using a threshold of 3 standard deviations
-outliers <- which(abs(z_scores) > 3, arr.ind = TRUE)
+# Remove the identified data points from the dataset
+vehicles <- vehicles[-outliers[,1],]
 
-# create a boxplot to visualize outliers
-boxplot(vehicles, main = "Boxplot of Data with Outliers", ylab = "Data")
+# Create a boxplot of the dataset
+boxplot(vehicles)
 
-# Remove outliers
-vehicles <- vehicles[-outliers[,1], ]
+
+
+
+# Import required libraries
+library(readxl)
+library(factoextra)
+
+# Read data
+vehicles <- read_excel("Dataset/vehicles.xlsx")
+
+# Create working data set
+vehicles.raw <- vehicles[2:20]
+
+# Detect outliers by boxplot method
+outliers <- boxplot(vehicles.raw[1:18], plot = TRUE)$out
+
+# Delete outliers
+vehicles.clear <- vehicles.raw[-outliers,]
+
+# Copy class names for evaluation
+classes.name <- vehicles.clear$Class
 
 # Scale data
-vehicles <- scale(vehicles)
+vehicles.scale <- scale(vehicles.clear)
+
+# Summary and structure of scaled data
+summary(vehicles.scale)
+str(vehicles.scale)
+
+
+
+
+NBclust <- NbClust(vehicles.scale, distance = "euclidean", min.nc = 2, max.nc = 6, method = "kmeans")
+
+
+fviz_nbclust(vehicles.scale, kmeans, method = "wss")
+
+
+fviz_nbclust(vehicles.scale, kmeans, method = "gap_stat")
+
+fviz_nbclust(vehicles.scale, kmeans, method = "silhouette")
+
+
+
 
 
 
 # <----------------------------- 1 - B ----------------------------->
 
-library(cluster)
-
 # NBclust
-library(NbClust)
-set.seed(123)
 NBclust <- NbClust(vehicles, distance = "euclidean", min.nc = 2, max.nc = 6, method = "kmeans")
-NBclust$Best.nc # Best number of clusters
 
 # Elbow method
-library(factoextra)
-fviz_nbclust(vehicles, kmeans, method = "wss" , k.max = 6) + geom_vline(xintercept = 3, linetype = 2)
+fviz_nbclust(vehicles, kmeans, method = "wss")
 
 # Gap statistics
-set.seed(123)
-gap_stat <- clusGap(vehicles, FUN = kmeans, nstart = 25, K.max = 6, B = 50)
-fviz_gap_stat(gap_stat) + geom_vline(xintercept = 3, linetype = 2)
+fviz_nbclust(vehicles, kmeans, method = "gap_stat")
 
-# Silhouette method
-km <- kmeans(vehicles, centers = 3, nstart = 25)
-sil_h <- silhouette(km$cluster, dist(vehicles))
-fviz_silhouette(sil_h) + geom_vline(xintercept = 0.25, linetype = 2)
+# Determine the optimal number of clusters using the silhouette method
+fviz_nbclust(vehicles, kmeans, method = "silhouette")
 
 
 
 # <----------------------------- 1 - C ----------------------------->
 
 # Set the number of clusters
-k <- 3
+k <- 2
 
 # Perform k-means clustering
-set.seed(123)
 km <- kmeans(vehicles, centers = k)
+
+# Print the cluster centers & cluster assignments for each data point
+km$centers
+km$cluster
+
+# Create a plot of the clustering results
+fviz_cluster(km, data = vehicles, 
+             palette = c("#2E9FDF", "#00AFBB", "#E7B800"), 
+             geom = "point",
+             ellipse.type = "convex", 
+             ggtheme = theme_bw(),
+             main = "K-means Clustering Results"
+)
 
 # Compute the WSS, BSS and TSS
 wss <- sum(km$withinss)
@@ -69,25 +115,33 @@ bss <- sum(km$betweenss)
 tss <- wss + bss
 
 # Print the ratio of BSS over TSS
+cat("WSS :", wss)
+cat("BSS :", bss)
+cat("TSS :", tss)
 cat("Ratio of BSS over TSS:", bss / tss)
 
 
 
 
 # <----------------------------- 1 - D ----------------------------->
+# Generate the silhouette plot
+sil <- silhouette(km$cluster, dist(vehicles))
+
+# Plot the silhouette plot
+plot(sil, main = "Silhouette Plot for K-means Clustering")
+
 
 
 # Calculate the silhouette width for each observation:
 sil_width <- silhouette(km$cluster, dist(vehicles))
-#summary(sil_width)$avg.width
-#library(factoextra)
-#fviz_silhouette(sil_width, print.summary = TRUE)
+
+# Create a colored silhouette plot
+fviz_silhouette(sil_width, palette = c("#2E9FDF", "#00AFBB", "#E7B800"), ggtheme = theme_bw(),
+                main = "Silhouette Plot of Clustering Results")
 
 # Calculate the average silhouette width for the clustering solution:
-mean(sil_width[,k])
+cat("Average Silhouerre Width:", mean(sil_width[,k]))
 
-# Visualize the silhouette plot:
-plot(sil_width, border = "NA")
 
 
 
@@ -120,38 +174,30 @@ cat("Number of components to explain 92% variance:", n_components, "\n")
 # Create a new dataset with the chosen principal components
 vehicles_pca <- as.data.frame(predict(pca, vehicles))[, 1:n_components]
 
-# We choose 5 principal components because they explain more than 92% of the variance in the data
+
 
 
 
 # <----------------------------- 1 - F ----------------------------->
 
-#vehicles_pca <- scale(vehicles_pca)
-
 # NBclust
-set.seed(123)
-NBclust_pca <- NbClust(vehicles_pca, distance = "euclidean", min.nc = 2, max.nc = 6, method = "kmeans")
-NBclust_pca$Best.nc # Best number of clusters
+NBclust <- NbClust(vehicles, distance = "euclidean", min.nc = 2, max.nc = 6, method = "kmeans")
 
 # Elbow method
-fviz_nbclust(vehicles_pca, kmeans, method = "wss" , k.max = 6) + geom_vline(xintercept = 3, linetype = 2)
+fviz_nbclust(vehicles, kmeans, method = "wss")
 
 # Gap statistics
-set.seed(123)
-gap_stat_pca <- clusGap(vehicles_pca, FUN = kmeans, nstart = 25, K.max = 6, B = 50)
-fviz_gap_stat(gap_stat_pca) + geom_vline(xintercept = 3, linetype = 2)
+fviz_nbclust(vehicles, kmeans, method = "gap_stat")
 
-# Silhouette method
-km_pca <- kmeans(vehicles_pca, centers = 3, nstart = 25)
-sil_h_pca <- silhouette(km_pca$cluster, dist(vehicles_pca))
-fviz_silhouette(sil_h_pca) + geom_vline(xintercept = 0.25, linetype = 2)
+# Determine the optimal number of clusters using the silhouette method
+fviz_nbclust(vehicles, kmeans, method = "silhouette")
 
 
 
 # <----------------------------- 1 - G ----------------------------->
 
 # Choose the best k from the automated methods
-k_pca <- 3
+k_pca <- 2
 
 # Perform k-means clustering on the PCA-based dataset
 set.seed(123)
@@ -184,13 +230,4 @@ plot(sil_width_pca, border = NA)
 
 # Calculate the average silhouette width for the clustering solution
 mean(sil_width_pca[, k_pca])
-
-
-
-
-
-
-
-
-
 
