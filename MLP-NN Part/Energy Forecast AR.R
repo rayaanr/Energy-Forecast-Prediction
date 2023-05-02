@@ -17,23 +17,20 @@ t_6 = lag(energyUsage_20, 6)
 t_7 = lag(energyUsage_20, 7)
 
 # Create input/output matrices with time-delayed electricity loads
-input_data_1 <- data.frame(t_1)
-input_data_2 <- data.frame(t_2, t_1)
-input_data_3 <- data.frame(t_4, t_3, t_2, t_1)
-input_data_4 <- data.frame(t_7, t_4, t_3, t_2, t_1)
-input_data_5 <- data.frame(t_7, t_6, t_5, t_4, t_3, t_2, t_1)
-input_data = input_data_5 #Select the input data
+input_data_1 <- data.frame(t_3, t_2, t_1)
+input_data_2 <- data.frame(t_4, t_3, t_2, t_1)
+input_data_3 <- data.frame(t_7, t_4, t_3, t_2, t_1)
+input_data_4 <- data.frame(t_7, t_6, t_5, t_4, t_3, t_2, t_1)
+
+input_data = input_data_4 #Select the input data
 
 output_data <- energyUsage_20
-
-# Rename columns
-#colnames(input_data) <- paste0("t_", 7:1)
 colnames(output_data) <- "output"
 
-# Normalize the data adn create the IO Matrix
+# Normalize the data adn create the IO Matrix (Run only required matrix)
 io_matrix <- cbind(scale(input_data), scale(output_data))
-io_matrix <- na.omit(io_matrix)
 
+io_matrix <- na.omit(io_matrix)
 summary(io_matrix)
 
 # Subset the data into training and testing sets
@@ -41,89 +38,33 @@ train_data <- io_matrix[1:380, ]
 test_data <- io_matrix[381:nrow(io_matrix), ]
 
 # Train MLP model with modified parameters
-mlp_1 <- neuralnet(output ~ .,
-                 data = train_data, hidden = 10,
-                 act.fct = "logistic",
+mlp <- neuralnet(output ~ .,
+                 data = train_data, hidden = c(3,2),
+                 act.fct = "tanh",
                  linear.output = FALSE)
 
-mlp_2 <- neuralnet(output ~ .,
-                 data = train_data, hidden = 20,
-                 act.fct = "logistic",
-                 linear.output = FALSE)
-
-mlp_3 <- neuralnet(output ~ .,
-                 data = train_data, hidden = c(10,5),
-                 act.fct = "logistic",
-                 linear.output = FALSE)
-
-mlp_4 <- neuralnet(output ~ .,
-                   data = train_data, hidden = c(15,20),
-                   act.fct = "logistic",
-                   linear.output = FALSE)
-
-mlp_5 <- neuralnet(output ~ .,
-                   data = train_data, hidden = 5,
-                   act.fct = "tanh",
-                   linear.output = FALSE)
-
-mlp_6 <- neuralnet(output ~ .,
-                   data = train_data, hidden = 15,
-                   act.fct = "tanh",
-                   linear.output = FALSE)
-
-mlp_7 <- neuralnet(output ~ .,
-                   data = train_data, hidden = c(5,10),
-                   act.fct = "tanh",
-                   linear.output = FALSE)
-
-mlp_8 <- neuralnet(output ~ .,
-                   data = train_data, hidden = c(10,20),
-                   act.fct = "tanh",
-                   linear.output = FALSE)
-
-mlp_9 <- neuralnet(output ~ .,
-                   data = train_data, hidden = 8,
-                   act.fct = "relu",
-                   linear.output = FALSE)
-
-mlp_10 <- neuralnet(output ~ .,
-                   data = train_data, hidden = 17,
-                   act.fct = "relu",
-                   linear.output = FALSE)
-
-mlp_11 <- neuralnet(output ~ .,
-                   data = train_data, hidden = c(8,17),
-                   act.fct = "relu",
-                   linear.output = FALSE)
-
-mlp_12 <- neuralnet(output ~ .,
-                   data = train_data, hidden = c(10,15),
-                   act.fct = "relu",
-                   linear.output = FALSE)
 
 
-mlp_1 <- neuralnet(output ~ ., data = train_data, hidden = 10, act.fct = "logistic", linear.output = FALSE) 
-mlp_2 <- neuralnet(output ~ ., data = train_data, hidden = 20, act.fct = "logistic", linear.output = FALSE) 
-mlp_3 <- neuralnet(output ~ ., data = train_data, hidden = c(10,5), act.fct = "logistic", linear.output = FALSE)
-mlp_4 <- neuralnet(output ~ ., data = train_data, hidden = c(15,20), act.fct = "logistic", linear.output = FALSE) 
-mlp_5 <- neuralnet(output ~ ., data = train_data, hidden = 5, act.fct = "tanh", linear.output = FALSE)
-mlp_6 <- neuralnet(output ~ ., data = train_data, hidden = 15, act.fct = "tanh", linear.output = FALSE)
-mlp_7 <- neuralnet(output ~ ., data = train_data, hidden = c(5,10), act.fct = "tanh", linear.output = FALSE) 
-mlp_8 <- neuralnet(output ~ ., data = train_data, hidden = c(10,20), act.fct = "tanh", linear.output = FALSE) 
-mlp_9 <- neuralnet(output ~ ., data = train_data, hidden = 8, act.fct = "relu", linear.output = FALSE) 
-mlp_10 <- neuralnet(output ~ ., data = train_data, hidden = 17, act.fct = "relu", linear.output = FALSE)
-mlp_11 <- neuralnet(output ~ ., data = train_data, hidden = c(8,17), act.fct = "relu", linear.output = FALSE) 
-mlp_12 <- neuralnet(output ~ ., data = train_data, hidden = c(10,15), act.fct = "relu", linear.output = FALSE)
+# mlp <- neuralnet(output ~ ., data = train_data, hidden = 20, act.fct = "logistic", linear.output = FALSE) 
+# mlp <- neuralnet(output ~ ., data = train_data, hidden = c(10,5), act.fct = "logistic", linear.output = FALSE)
+# mlp <- neuralnet(output ~ ., data = train_data, hidden = c(15,20), act.fct = "logistic", linear.output = FALSE) 
+# mlp <- neuralnet(output ~ ., data = train_data, hidden = 5, act.fct = "tanh", linear.output = FALSE)
+# mlp <- neuralnet(output ~ ., data = train_data, hidden = 15, act.fct = "tanh", linear.output = FALSE)
+# mlp <- neuralnet(output ~ ., data = train_data, hidden = c(5,10), act.fct = "tanh", linear.output = FALSE) 
+# mlp <- neuralnet(output ~ ., data = train_data, hidden = c(10,20), act.fct = "tanh", linear.output = FALSE) 
+# mlp <- neuralnet(output ~ ., data = train_data, hidden = 8, act.fct = "relu", linear.output = FALSE) 
+# mlp <- neuralnet(output ~ ., data = train_data, hidden = 17, act.fct = "relu", linear.output = FALSE)
+# mlp <- neuralnet(output ~ ., data = train_data, hidden = c(8,17), act.fct = "relu", linear.output = FALSE) 
+# mlp <- neuralnet(output ~ ., data = train_data, hidden = c(10,15), act.fct = "relu", linear.output = FALSE)
 
-selected_mlp = mlp_1 #Select the mlp for the rest of the prediction
 
 # Make predictions on the test data
-test_pred <- compute(selected_mlp, test_data[, -ncol(test_data)])
+test_pred <- neuralnet::compute(mlp, test_data[, -ncol(test_data)])
 
-# Rescale the predictions back to the original scale
+# Backscale the predictions back to the original scale
 test_pred_rescaled <- test_pred$net.result * sd(output_data$output) + mean(output_data$output)
 
-# Rescale the output back to the original scale
+# Backscale the output back to the original scale
 test_data_df <- as.data.frame(test_data)
 test_output_rescaled <- test_data_df$output * sd(output_data$output) + mean(output_data$output)
 
@@ -146,7 +87,7 @@ cat("MAE:", mae, "\n")
 cat("MAPE:", mape, "% \n")
 cat("sMAPE:", smape, "% \n")
 
-plot(selected_mlp)
+plot(mlp)
 
 library(ggplot2)
 
@@ -157,5 +98,5 @@ plot_data <- data.frame(Predicted = test_pred_rescaled, Expected = test_output_r
 ggplot(plot_data, aes(x = Expected, y = Predicted)) +
   geom_point() +
   geom_abline(intercept = 0, slope = 1, color = "red") +
-  labs(x = "Observed", y = "Predicted", title = "Predicted vs. Observed")
+  labs(x = "Actual", y = "Predicted", title = "Predicted vs. Actual")
 
