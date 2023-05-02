@@ -2,6 +2,7 @@ library(readxl)
 library(cluster)
 library(NbClust)
 library(factoextra)
+library(fpc)
 
 vehicles <- read_excel("/Users/rayaan/Edu/ML & DS/ML Coursework/PC Part/vehicles.xlsx") # Read the Excel file
 vehicles <- vehicles[, -c(1, ncol(vehicles))]  # Remove the first and last columns
@@ -35,7 +36,7 @@ abline(h = 0.92, v = n_components, col = "red", lty = "dashed")
 # Create a new dataset with the chosen principal components
 vehicles_pca <- predict(pca, newdata = vehicles)[, 1:n_components]
 
-
+vehicles_pca <- as.data.frame(vehicles_pca)
 
 
 # <----------------------------- 1 - F ----------------------------->
@@ -99,3 +100,12 @@ fviz_silhouette(sil_width_pca, palette = c("#2E9FDF", "#00AFBB", "#E7B800"), ggt
                 main = "Silhouette Plot of Clustering Results")
 
 
+
+# Calculate the Calinski-Harabasz Index
+ch_index <- calinhara(vehicles_pca, km_pca$cluster)
+
+# Print the CH index value
+cat("Calinski-Harabasz Index:", ch_index)
+
+# Visualize the clustering results
+fviz_cluster(km_pca, data = vehicles_pca)
