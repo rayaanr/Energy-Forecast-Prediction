@@ -13,7 +13,6 @@ vehicles <- subset(vehicles, !outliers) # Remove outliers
 
 
 # <----------------------------- 1 - E ----------------------------->
-# https://www.youtube.com/watch?v=0Jp4gsfOLMs
 
 # Perform PCA
 pca <- prcomp(vehicles)

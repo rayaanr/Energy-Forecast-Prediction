@@ -13,30 +13,35 @@ t1_18 = lag(energyUsage$`18:00`, 1)
 t2_18 = lag(energyUsage$`18:00`, 2)
 t3_18 = lag(energyUsage$`18:00`, 3)
 t4_18 = lag(energyUsage$`18:00`, 4)
+t7_18 = lag(energyUsage$`18:00`, 7)
 t1_19 = lag(energyUsage$`19:00`, 1)
 t2_19 = lag(energyUsage$`19:00`, 2)
 t3_19 = lag(energyUsage$`19:00`, 3)
 t4_19 = lag(energyUsage$`19:00`, 4)
+t7_19 = lag(energyUsage$`19:00`, 7)
 t1_20 = lag(energyUsage$`20:00`, 1)
 t2_20 = lag(energyUsage$`20:00`, 2)
 t3_20 = lag(energyUsage$`20:00`, 3)
 t4_20 = lag(energyUsage$`20:00`, 4)
+t7_20 = lag(energyUsage$`20:00`, 7)
 
 # Create input/output matrices with time-delayed electricity loads
 
-input_data_1 <- data.frame(t1_18, t2_18, t3_18, t4_18, t1_19, t2_19, t3_19,
-                         t4_19, t1_20, t2_20, t3_20, t4_20)
+input_data_1 <- data.frame(t1_18, t2_18, t3_18, t4_18, t7_18, t1_19, t2_19, t3_19,
+                         t4_19, t7_19, t1_20, t2_20, t3_20, t4_20, t7_20)
 input_data_2 <- data.frame(t1_18, t1_19, t1_20)
 input_data_3 <- data.frame(t1_18, t2_18, t3_18, t4_18, t1_19, t2_19, t3_19, t4_19)
 
-input_data = input_data_1 #Selecte the input data
-
+input_data = input_data_1 #Select the input data
 
 output_data <- energyUsage["20:00"]
 colnames(output_data) <- "output"
 
 # Normalize the data
-io_matrix <- cbind(scale(input_data), scale(output_data))
+io_matrix <- cbind(scale(input_data_1), scale(output_data))
+io_matrix_1 <- cbind(scale(input_data_2), scale(output_data))
+io_matrix_2 <- cbind(scale(input_data_3), scale(output_data))
+
 io_matrix <- na.omit(io_matrix)
 
 # Subset the data into training and testing sets
@@ -44,24 +49,35 @@ train_data <- io_matrix[1:380, ]
 test_data <- io_matrix[381:nrow(io_matrix), ]
 
 # Train MLP model with modified parameters
-mlp_1 <- neuralnet(output ~ .,
-                 data = train_data, hidden = c(10,5),
-                 linear.output = FALSE)
+mlp_1 <- neuralnet(output ~  t1_18 + t2_18 + t3_18 + t4_18 + t7_18 + t1_19 + t2_19 + 
+                     t3_19 + t4_19 + t7_19 + t1_20 + t2_20 + t3_20 + t4_20 + t7_20,
+                 data = train_data, hidden = 3,
+                 act.fct = "logistic",
+                 linear.output = FALSE,
+                 stepmax = 1e5)
 
-mlp_2 <- neuralnet(output ~ .,
-                 data = train_data, hidden = c(10,5),
-                 linear.output = FALSE)
+mlp_2 <- neuralnet(output ~ t1_18 + t2_18 + t3_18 + t4_18 + t1_19 + t2_19 + t3_19 + t4_19,
+                 data = train_data, hidden = c(3,2), act.fct = "logistic",
+                 linear.output = FALSE, stepmax = 1e5)
 
-mlp_3 <- neuralnet(output ~ .,
-                   data = train_data, hidden = c(10,5),
-                   act.fct = "tanh",
-                   linear.output = FALSE)
+mlp_3 <- neuralnet(output ~ t1_18 + t2_18 + t3_18 + t4_18 + t1_19 + t2_19 + t3_19 + t4_19,
+                 data = train_data, hidden = 5, act.fct = "tanh",
+                 linear.output = FALSE, stepmax = 1e5)
+
+mlp_4 <- neuralnet(output ~ t1_18 + t2_18 + t3_18 + t4_18 + t7_18 + t1_19 + t2_19 + 
+                     t3_19 + t4_19 + t7_19 + t1_20 + t2_20 + t3_20 + t4_20 + t7_20,
+                 data = train_data, hidden = c(5,7), act.fct = "logistic",
+                 linear.output = FALSE, stepmax = 1e5)
+
+mlp_5 <- neuralnet(output ~ t1_18 + t1_19 + t1_20,
+                 data = train_data, hidden = 3, act.fct = "tanh",
+                 linear.output = FALSE, stepmax = 1e5)
 
 
 selected_mlp = mlp_1 #Select the mlp for the rest of the prediction
 
 # Make predictions on the test data & Rescale the predictions back to the original scale
-test_pred <- compute(selected_mlp, test_data[, -ncol(test_data)])
+test_pred <- neuralnet::compute(selected_mlp, test_data[, -ncol(test_data)])
 
 # Rescale the predictions back to the original scale
 test_pred_rescaled <- test_pred$net.result * sd(output_data$output) + mean(output_data$output)
@@ -99,7 +115,7 @@ plot_data <- data.frame(Predicted = test_pred_rescaled, Observed = test_output_r
 ggplot(plot_data, aes(x = Observed, y = Predicted)) +
   geom_point() +
   geom_abline(intercept = 0, slope = 1, color = "red") +
-  labs(x = "Observed", y = "Predicted", title = "Predicted vs. Observed")
+  labs(x = "Actual", y = "Predicted", title = "Predicted vs. Actual (NARX)")
 
 
 
